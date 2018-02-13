@@ -15,38 +15,13 @@ class Morse
     void dot();
     void dash();
     void endLine();
-    int getChars(char i);
     void codeString(String text);
-    void decide(char c);
-    void A();
-    void B();
-    void C();
-    void D();
-    void E();
-    void FF();
-    void G();
-    void H();
-    void I();
-    void J();
-    void K();
-    void L();
-    void M();
-    void N();
-    void O();
-    void P();
-    void Q();
-    void R();
-    void S();
-    void T();
-    void U();
-    void V();
-    void W();
-    void X();
-    void Y();
-    void Z();
-    void gap();
+    void encodeChar(char character);
+    void do_gap();
+    void do_signal (String encode_string  );
   private:
     int _pin;
+    //String ALPHABET[];
 };
 
 #endif
