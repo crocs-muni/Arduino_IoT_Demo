@@ -50,7 +50,6 @@ void setup()
   radio.Sleep(); //sleep right away to save power
   Serial.println("Begin measure!");
   Serial.println("Transmitting...\n\n");
-  Serial.println("Begin measure!");
   dht.begin();
 }
 
@@ -93,14 +92,16 @@ void loop()
    dtostrf(h, 6, 2, str);
    strcat(out_str, str);
    Serial.println(out_str);
+   Serial.println(strlen(out_str));
+   Serial.println("Length");
 
    char numberCH[] = "25.03";
    //float aa = (String) numberCH.toFloat();
   
-  char textChar[22];
-  String textString = String(hic);
+  //char textChar[22];
+  //String textString = String(hic);
 //  strcat(textChar,String(f));
-  Serial.print(textChar);
+  //Serial.print(textChar);
   Serial.print("Humidity: ");
   Serial.print(h);
   Serial.print(" %\t");
@@ -139,7 +140,8 @@ void loop()
   requestACK = !(sendSize % 3); //request ACK every 3rd xmission
   
   radio.Wakeup();
-  radio.Send(GATEWAYID, message, 5, requestACK);
+  //radio.Send(GATEWAYID, message, 5, requestACK);
+  radio.Send(GATEWAYID, out_str, strlen(out_str), requestACK);
   if (requestACK)
   {
     Serial.print(" - waiting for ACK...");
