@@ -25,6 +25,12 @@ DHT dht(DHTPIN, DHTTYPE);
 #define ACK_TIME     50  // # of ms to wait for an ack
 #define SERIAL_BAUD  9600    //115200
 
+typedef struct {
+  float      temperature;    // measured tempreture in Celsius
+  float       humidity;   // measured humidity
+} Payload;
+Payload theData;
+
 //encryption is OPTIONAL
 //to enable encryption you will need to:
 // - provide a 16-byte encryption KEY (same on all nodes that talk encrypted)
@@ -60,64 +66,40 @@ void loop()
 
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  float h = dht.readHumidity();
+  theData.humidity = dht.readHumidity();
   // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
+  theData.temperature = dht.readTemperature();
   // Read temperature as Fahrenheit (isFahrenheit = true)
-  float f = dht.readTemperature(true);
+  //float f = dht.readTemperature(true);
 
   // Check if any reads failed and exit early (to try again).
-  if (isnan(h) || isnan(t) || isnan(f)) {
+  if (isnan(theData.humidity) || isnan(theData.temperature)) {
     Serial.println("Failed to read from DHT sensor!");
+    // repeat measurement!!
     return;
   }
 
   // Compute heat index in Fahrenheit (the default)
-  float hif = dht.computeHeatIndex(f, h);
+  //  float hif = dht.computeHeatIndex(f, h);
   // Compute heat index in Celsius (isFahreheit = false)
-  float hic = dht.computeHeatIndex(t, h, false);
+  //float hic = dht.computeHeatIndex(t, h, false);
 
-  //char text[10];
-  //dtostrf(hic, 6, 2, text);    // method convert float number into char[]
-
-  char str[] = "This is my string"; // create a string
-  char out_str[40]; // output from string functions placed here
-  dtostrf(hic, 5, 2, str);
-  strcpy(out_str, str);
-  Serial.println(out_str);
-   // (5) add a string to the end of a string (append)
-   strcat(out_str, " ");
-   
-   Serial.println(out_str);
-   dtostrf(h, 6, 2, str);
-   strcat(out_str, str);
-   Serial.println(out_str);
-   Serial.println(strlen(out_str));
-   Serial.println("Length");
-
-   char numberCH[] = "25.03";
-   //float aa = (String) numberCH.toFloat();
-  
-  //char textChar[22];
-  //String textString = String(hic);
-//  strcat(textChar,String(f));
-  //Serial.print(textChar);
   Serial.print("Humidity: ");
-  Serial.print(h);
+  Serial.print(theData.humidity);
   Serial.print(" %\t");
   Serial.print("Temperature: ");
-  Serial.print(t);
+  Serial.print(theData.temperature);
   Serial.print(" *C ");
-  Serial.print(f);
+  /**Serial.print(f);
   Serial.print(" *F\t");
   Serial.print("Heat index: ");
   Serial.print(hic);
   Serial.print(" *C ");
   Serial.print(hif);
-  Serial.println(" *F");
+  Serial.println(" *F");**/
 
   //*****************************************************************************
-  
+
   //serial input of [0-9] will change the transmit delay between 100-1000ms
   if (Serial.available() > 0) {
     input = Serial.read();
@@ -136,12 +118,12 @@ void loop()
   Serial.print("]:");
   for(byte i = 0; i < sendSize+1; i++)
     Serial.print((char)payload[i]);
-  
+
   requestACK = !(sendSize % 3); //request ACK every 3rd xmission
-  
+
   radio.Wakeup();
   //radio.Send(GATEWAYID, message, 5, requestACK);
-  radio.Send(GATEWAYID, out_str, strlen(out_str), requestACK);
+  radio.Send(GATEWAYID, (const void*)(&theData), sizeof(theData), requestACK);
   if (requestACK)
   {
     Serial.print(" - waiting for ACK...");
@@ -149,7 +131,7 @@ void loop()
     else Serial.print("nothing...");
   }
   radio.Sleep();
-  
+
   sendSize = (sendSize + 1) % 88;
   Serial.println();
   delay(interPacketDelay);
@@ -164,4 +146,3 @@ static bool waitForAck() {
   return false;
 }
 //*************************************
-
