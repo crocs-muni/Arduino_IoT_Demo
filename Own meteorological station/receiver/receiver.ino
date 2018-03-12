@@ -12,6 +12,12 @@
 #define NETWORKID       99  //the network ID we are on
 #define SERIAL_BAUD 9600     //115200
 
+typedef struct {
+  float      temperature;    // measured tempreture in Celsius
+  float       humidity;   // measured humidity
+} Payload;
+Payload theData;
+
 //encryption is OPTIONAL
 //to enable encryption you will need to:
 // - provide a 16-byte encryption KEY (same on all nodes that talk encrypted)
@@ -35,14 +41,23 @@ void loop()
   {
     if (radio.CRCPass())
     {
-      Serial.print('[');Serial.print(radio.GetSender());Serial.print("] ");
-      for (byte i = 0; i < *radio.DataLen; i++) //can also use radio.GetDataLen() if you don't like pointers
-        Serial.print((char)radio.Data[i]);
-
-      if (radio.ACKRequested())
+      if (*radio.DataLen != sizeof(Payload))
+        Serial.print(F("Invalid payload received, not matching Payload struct!"));
+      else
       {
-        radio.SendACK();
-        Serial.print(" - ACK sent");
+        theData = *(Payload*)radio.Data; //assume radio.DATA actually contains our struct and not something else
+
+        Serial.print(F("Temperature: "));
+        Serial.print(theData.temperature);
+        Serial.print(F(" C, Humidity: "));
+        Serial.print(theData.humidity);
+        Serial.print(F(" %\n"));
+
+        if (radio.ACKRequested())
+        {
+          radio.SendACK();
+          Serial.print(" - ACK sent");
+        }
       }
     }
     else
