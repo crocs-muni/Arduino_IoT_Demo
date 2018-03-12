@@ -44,8 +44,6 @@ char input = 0;
 // Need an instance of the Radio Module
 RFM12B radio;
 byte sendSize=0;
-char payload[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*(){}[]`|<>?+=:;,.";
-char message[] = "18 35";
 bool requestACK=false;
 
 void setup()
@@ -116,8 +114,6 @@ void loop()
   Serial.print("Sending[");
   Serial.print(sendSize+1);
   Serial.print("]:");
-  for(byte i = 0; i < sendSize+1; i++)
-    Serial.print((char)payload[i]);
 
   requestACK = !(sendSize % 3); //request ACK every 3rd xmission
 
