@@ -13,9 +13,9 @@
 RFM12B radio;
 byte ackCount=0;
 
-typedef struct {		
-  uint8_t   command;// command identifier 
-  uint16_t  vcc;    // current Arduino VCC power 
+typedef struct {
+  uint8_t   command;// command identifier
+  uint16_t  vcc;    // current Arduino VCC power
   int8_t    rssi;   // RSSI
 } Payload;
 Payload theData;
@@ -27,13 +27,13 @@ volatile uint8_t  adc_irq_cnt;
 /* ======================================================================
 Function: Interrupt routine for ADC
 Purpose : Fired when ADC interrupt occured (mainly end of convertion)
-Input   : 
-Output  : 
+Input   :
+Output  :
 Comments: Used by readADCLowNoise
 ====================================================================== */
-ISR(ADC_vect)  
+ISR(ADC_vect)
 {
-  // Increment ADC sample count 
+  // Increment ADC sample count
   adc_irq_cnt++;
 }
 
@@ -49,10 +49,10 @@ uint16_t readADCLowNoise(bool average)
 {
   uint8_t low, high;
   uint16_t sum = 0;
-  
+
   // Start 1st Conversion, but ignore it, can be hazardous
-  ADCSRA |= _BV(ADSC); 
-  
+  ADCSRA |= _BV(ADSC);
+
   // as we will enter into deep sleep mode, flush serial to avoid
   // data loss or corrupted
   Serial.flush();
@@ -65,7 +65,7 @@ uint16_t readADCLowNoise(bool average)
 
   // Want to have an interrupt when the conversion is done
   ADCSRA |= _BV( ADIE );
-  
+
   // Loop thru samples
   do
   {
@@ -73,7 +73,7 @@ uint16_t readADCLowNoise(bool average)
     set_sleep_mode( SLEEP_MODE_ADC );
     sleep_enable();
 
-    // Wait until conversion is finished 
+    // Wait until conversion is finished
     do
     {
       // The following line of code is only important on the second pass.  For the first pass it has no effect.
@@ -91,24 +91,24 @@ uint16_t readADCLowNoise(bool average)
     sleep_disable();
     // Enable interrupts
     sei();
-    
+
     // read low first
     low  = ADCL;
     high = ADCH;
-    
+
     // Sum the total
     sum += ((high << 8) | low);
-    
+
   }
   // Hard coded to read 8 samples
   while (adc_irq_cnt<8);
-  
+
   // No more interrupts needed for this
   ADCSRA &= ~ _BV( ADIE );
-  
+
   // Return the average divided by 8 (8 samples) if asked
   return ( average ? sum >> 3 : sum );
-  
+
 }
 
 /* ======================================================================
@@ -118,34 +118,34 @@ Input   : -
 Output  : value readed in mV
 Comments: ADC Channel input is modified
 ====================================================================== */
-uint16_t readVcc() 
+uint16_t readVcc()
 {
-  uint16_t value; 
-  
-  // Indicate RFM12B IRQ we're doing conversion 
+  uint16_t value;
+
+  // Indicate RFM12B IRQ we're doing conversion
   // so it should not doing any RSSI acquisition in the interval
   // we're using the ADC
   radio.noRSSI(true);
-  
+
   // Read 1.1V reference against AVcc
   // REFS1 REFS0          --> 0 1, AVcc external ref. -Selects AVcc external reference
   // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         -Selects channel 14, bandgap voltage, to measure
   ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
 
   // Take care, changing reference from VCC to 1.1V bandgap can take some time, this is due
-  // to the fact that the capacitor on aref pin need to discharge or to charge 
-  delay(10);  
+  // to the fact that the capacitor on aref pin need to discharge or to charge
+  delay(10);
 
   // read value
   value = readADCLowNoise(true);
-  
+
   // we done with ADC
   radio.noRSSI(false);
-  
+
   // Vcc reference in millivolts
   // can be adjusted 1100L if 1V1 reference but has tolerance of 10% so you can measure it
   // and change it there, or better use it as parameter
-  return ( (( 1023L * 1100L) / value) ); 
+  return ( (( 1023L * 1100L) / value) );
 }
 
 
@@ -154,9 +154,9 @@ Function: setup
 Purpose : Configuration of Arduino I/O and other stuff
 Input   : -
 Output  : -
-Comments: 
+Comments:
 ====================================================================== */
-void setup() 
+void setup()
 {
 
   pinMode(LED, OUTPUT);
@@ -164,7 +164,7 @@ void setup()
   Serial.begin(SERIAL_BAUD);
   delay(10);
   Serial.println(F("RFM12B Range Test Gateway"));
-  
+
    // Try to detect and Init On moteino RF12 device SS is D10 and IRQ D2 (default)
   // So the parameters are optional
   // if radio.isPresent()
@@ -172,17 +172,17 @@ void setup()
     Serial.println(F("RFM12B Detected OK!"));
   else
     Serial.println(F("RFM12B Detection FAIL! (is chip present?)"));
-    
+
   // Ok now we indicate we want to use ARSSI reading, on my board I put ARSSI signal
   // on Analog 0 pinMode with Idle Arssi to 300 mv (need to be adjusted)
   radio.SetRSSI( RSSI_PIN, 350 );
-  
+
   radio.Initialize(NODEID, FREQUENCY, NETWORKID);
-  
+
   Serial.print(F("Transmitting at "));
   Serial.print(FREQUENCY==RF12_433MHZ ? 433 : FREQUENCY==RF12_868MHZ ? 868 : 915);
   Serial.println(F("Mhz..."));
-  
+
   // If RSSI is activated for this board
   // display relative information
   if ( radio.getRSSIIdle())
@@ -197,8 +197,8 @@ void setup()
   {
     Serial.println(F("ARSSI Disabled for this board"));
   }
-  
-  
+
+
   // read vcc value
   vcc=readVcc();
   Serial.print(F("Vcc = "));
@@ -212,7 +212,7 @@ void setup()
   Serial.println(F(")"));
 
   Serial.println(F("\nWaiting for receiving data from node ...\n"));
-  
+
 }
 
 /* ======================================================================
@@ -220,49 +220,49 @@ Function: loop
 Purpose : really need explanations ???
 Input   : -
 Output  : -
-Comments: 
+Comments:
 ====================================================================== */
-void loop() 
+void loop()
 {
   //process any serial input
   if (Serial.available() > 0)
   {
     char input = Serial.read();
-    
+
     // Read and display VCC value
-    if (input == 'v') 
+    if (input == 'v')
     {
       Serial.print(F("VCC : "));
       Serial.print(readVcc());
       Serial.println(F(" mV"));
     }
-    // Read physical Arssi value, can be used to 
+    // Read physical Arssi value, can be used to
     // determine vidle to pass to SetRSSI()
-    if (input == 'a') 
+    if (input == 'a')
     {
       int16_t adc_value;
-      
+
       // display some ARSII raw samples
       for (uint8_t i=0; i<=10; i++)
       {
-        // Indicate RFM12B IRQ we're doing conversion 
+        // Indicate RFM12B IRQ we're doing conversion
         // so it should not doing any RSSI acquisition in the interval
         // we're using the ADC
         radio.noRSSI(true);
-        
+
         // Selects AVcc external reference and ARSSI Analog pin
         ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (RSSI_PIN);
 
         // Take care, changing reference from VCC to 1.1V bandgap can take some time, this is due
-        // to the fact that the capacitor on aref pin need to discharge or to charge 
-        delay(10);  
+        // to the fact that the capacitor on aref pin need to discharge or to charge
+        delay(10);
 
         // read value and average samples
         adc_value = readADCLowNoise(true);
-        
+
         // we done with ADC
         radio.noRSSI(false);
-        
+
         // Now display
         Serial.print(F("ARSSI : "));
         Serial.print((uint32_t) vcc * adc_value / 1024); // convert arssi value to mV
@@ -290,44 +290,44 @@ void loop()
       Serial.print(rssi);
       Serial.println();**/
       int8_t k;
-      
-      Serial.print(F("[")); 
-      Serial.print(theNodeID, DEC); 
+
+      Serial.print(F("["));
+      Serial.print(theNodeID, DEC);
       Serial.print("] ");
 
-      if (- 100 < rssi & rssi <= -95){
+      if (- 100 < rssi & rssi <= -89){
         Serial.println("Too far");
-        digitalWrite(LED,HIGH);
-        delay(100);
         digitalWrite(LED,LOW);
-        delay(300);
-      }
-      if (- 95 < rssi & rssi <= -85){
-        Serial.println("far");
-        digitalWrite(LED,HIGH);
-        delay(200);
+        delay(25);
+        /**digitalWrite(LED,HIGH);
+        delay(50);
         digitalWrite(LED,LOW);
-        delay(200);
-      }
-      if (- 85 < rssi & rssi <= -75){
-        Serial.println("near");
-        digitalWrite(LED,HIGH);
-        delay(300);
-        digitalWrite(LED,LOW);
-        delay(100);
-      }
-      if (- 75 < rssi & rssi <= -65){
-        Serial.println("got it!");
+        delay(25);**/
         digitalWrite(LED,HIGH);
         delay(400);
-        digitalWrite(LED,LOW);
-        //delay(100);
       }
-      
+      if (- 89 < rssi & rssi <= -76){
+        Serial.println("Near");
+        digitalWrite(LED,LOW);
+        delay(250);
+        /**digitalWrite(LED,HIGH);
+        delay(20);
+        digitalWrite(LED,LOW);
+        delay(200);**/
+        digitalWrite(LED,HIGH);
+        delay(250);
+      }
+      if (- 76 < rssi & rssi <= -65){
+        Serial.println("got it!");
+        digitalWrite(LED,LOW);
+        delay(500);
+        digitalWrite(LED,HIGH);
+      }
+
       if (*radio.DataLen==sizeof(Payload))
       {
-        theData = *(Payload*)radio.Data; 
-        
+        theData = *(Payload*)radio.Data;
+
         // Ok is it a RSSI request packet ?
         if (theData.rssi==RF12_ARSSI_RECV && theData.command==0x01)
         {
@@ -335,19 +335,19 @@ void loop()
 
           // Send RSSI back
           radio.Send(theNodeID, &rssi, 1, false);
-          
+
 
           if (rssi == RF12_ARSSI_DISABLED )
             Serial.print(F("disabled")); // ARSSI was not enabled on sketch
           else if (rssi == RF12_ARSSI_BAD_IDLE )
-            Serial.print(F("has bad idle settings")); // Vidle for ARSSI has incorrect value 
+            Serial.print(F("has bad idle settings")); // Vidle for ARSSI has incorrect value
           else if (rssi == RF12_ARSSI_RECV )
             Serial.print(F("gateway RF reception in progress")); // can't get value another packet is in reception
           else if (rssi == RF12_ARSSI_ABOVE_MAX )
-            // Value above max limit, may be set up vidle is wrong 
+            // Value above max limit, may be set up vidle is wrong
             Serial.print(F("above maximum limit (measure and set vidle on gateway sketch"));
           else if (rssi == RF12_ARSSI_BELOW_MIN )
-            // Value below min limit, may be set up vidle is wrong 
+            // Value below min limit, may be set up vidle is wrong
             Serial.print(F("below minimum limit (measure and set vidle on gateway sketch"));
           else if (rssi == RF12_ARSSI_NB_BYTES )
           {
@@ -358,19 +358,19 @@ void loop()
           }
           else
           {
-            // all sounds good, display 
+            // all sounds good, display
             // display bargraph
             Serial.print(F("["));
-            
+
             for (k=RF12_ARSSI_MIN; k<=RF12_ARSSI_MAX; k++)
               Serial.print(rssi>=k ? '=' : ' ');
-              
+
             Serial.print(F("] "));
 
             Serial.print(rssi);
             Serial.print(F(" dB"));
-          }    
-          
+          }
+
           // Display Data info received including RSSI value
           Serial.print(F(" { "));
           Serial.print(F("Vcc="));
@@ -382,14 +382,12 @@ void loop()
       {
         Serial.print(F("Invalid payload received, not matching Payload struct!"));
       }
- 
+
       Serial.println();
-      
+
       // Light off the led
       //digitalWrite(LED,LOW);
-      
+
     }
   }
 }
-
-
