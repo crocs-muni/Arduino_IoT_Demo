@@ -6,7 +6,8 @@
 #include "DHT.h"
 #include <avr/sleep.h>
 
-#define DHTPIN 6     // what digital pin we're connected to 2
+#define DHTPIN 6     // what digital pin we're connected to
+#define LED 9
 
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11   // DHT 11
@@ -46,6 +47,18 @@ RFM12B radio;
 byte sendSize=0;
 bool requestACK=false;
 
+static Payload getDataFromSenzor(DHT dht){
+  Payload data;
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  data.humidity = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  data.temperature = dht.readTemperature();
+  // It is also possible read temperature as Fahrenheit (isFahrenheit = true)
+  // for exaple: float fahrenhaitTemperature = dht.readTemperature(true);
+  return data;
+}
+
 void setup()
 {
   Serial.begin(SERIAL_BAUD);
@@ -55,6 +68,7 @@ void setup()
   Serial.println("Begin measure!");
   Serial.println("Transmitting...\n\n");
   dht.begin();
+  pinMode(LED, OUTPUT);
 }
 
 void loop()
@@ -62,25 +76,13 @@ void loop()
   // Wait a few seconds between measurements.
   delay(2000);
 
-  // Reading temperature or humidity takes about 250 milliseconds!
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  theData.humidity = dht.readHumidity();
-  // Read temperature as Celsius (the default)
-  theData.temperature = dht.readTemperature();
-  // Read temperature as Fahrenheit (isFahrenheit = true)
-  //float f = dht.readTemperature(true);
+  theData = getDataFromSenzor(dht);
 
   // Check if any reads failed and exit early (to try again).
   if (isnan(theData.humidity) || isnan(theData.temperature)) {
     Serial.println("Failed to read from DHT sensor!");
-    // repeat measurement!!
     return;
   }
-
-  // Compute heat index in Fahrenheit (the default)
-  //  float hif = dht.computeHeatIndex(f, h);
-  // Compute heat index in Celsius (isFahreheit = false)
-  //float hic = dht.computeHeatIndex(t, h, false);
 
   Serial.print("Humidity: ");
   Serial.print(theData.humidity);
@@ -88,28 +90,6 @@ void loop()
   Serial.print("Temperature: ");
   Serial.print(theData.temperature);
   Serial.print(" *C ");
-  /**Serial.print(f);
-  Serial.print(" *F\t");
-  Serial.print("Heat index: ");
-  Serial.print(hic);
-  Serial.print(" *C ");
-  Serial.print(hif);
-  Serial.println(" *F");**/
-
-  //*****************************************************************************
-
-  //serial input of [0-9] will change the transmit delay between 100-1000ms
-  if (Serial.available() > 0) {
-    input = Serial.read();
-    if (input >= 48 && input <= 57) //[1..9] = {100..900}ms; [0]=1000ms
-    {
-      interPacketDelay = 100 * (input-48);
-      if (interPacketDelay == 0) interPacketDelay = 1000;
-      Serial.print("\nChanging delay to ");
-      Serial.print(interPacketDelay);
-      Serial.println("ms\n");
-    }
-  }
 
   Serial.print("Sending[");
   Serial.print(sendSize+1);
@@ -118,7 +98,7 @@ void loop()
   requestACK = !(sendSize % 3); //request ACK every 3rd xmission
 
   radio.Wakeup();
-  //radio.Send(GATEWAYID, message, 5, requestACK);
+  makeBlick();
   radio.Send(GATEWAYID, (const void*)(&theData), sizeof(theData), requestACK);
   if (requestACK)
   {
@@ -133,6 +113,13 @@ void loop()
   delay(interPacketDelay);
 }
 
+// make a signal, we can determine that station is still working
+static void makeBlick(){
+  digitalWrite(LED, LOW);
+  delay(50);
+  digitalWrite(LED, HIGH);
+}
+
 // wait a few milliseconds for proper ACK, return true if received
 static bool waitForAck() {
   long now = millis();
@@ -141,4 +128,3 @@ static bool waitForAck() {
       return true;
   return false;
 }
-//*************************************

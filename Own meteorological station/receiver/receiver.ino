@@ -10,7 +10,7 @@
 // By default the SPI-SS line used is D10 on Atmega328. You can change it by calling .SetCS(pin) where pin can be {8,9,10}
 #define NODEID           1  //network ID used for this unit
 #define NETWORKID       99  //the network ID we are on
-#define SERIAL_BAUD 9600     //115200
+#define SERIAL_BAUD 9600
 
 typedef struct {
   float      temperature;    // measured tempreture in Celsius
@@ -62,7 +62,7 @@ void loop()
     }
     else
       Serial.print("BAD-CRC");
-    
+
     Serial.println();
   }
 }
