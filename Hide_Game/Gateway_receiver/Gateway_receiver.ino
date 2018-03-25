@@ -15,7 +15,6 @@ byte ackCount=0;
 
 typedef struct {
   uint8_t   command;// command identifier
-  uint16_t  vcc;    // current Arduino VCC power
   int8_t    rssi;   // RSSI
 } Payload;
 Payload theData;
@@ -372,10 +371,10 @@ void loop()
           }
 
           // Display Data info received including RSSI value
-          Serial.print(F(" { "));
-          Serial.print(F("Vcc="));
-          Serial.print(theData.vcc);
-          Serial.print(F(" mV }"));
+          Serial.print(F(" { from sender "));
+          Serial.print(F("RSSI="));
+          Serial.print(theData.rssi);
+          Serial.print(F(" dB } I dont understand what this is"));
         }
       }
       else

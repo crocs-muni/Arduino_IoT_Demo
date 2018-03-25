@@ -32,9 +32,8 @@ byte sendSize=0;
 RFM12B radio;
 long lastPeriod = -1;
 
-typedef struct {		
-  uint8_t   command;// command identifier 
-  uint16_t  vcc;    // current Arduino VCC power 
+typedef struct {
+  uint8_t   command;// command identifier
   int8_t    rssi;   // RSSI
 } Payload;
 Payload theData;
@@ -68,13 +67,13 @@ const PROGMEM uint8_t bar_full8[8 * 8 / 8] =
 const PROGMEM uint8_t bar_full1[8 * 1 / 8] =
 {0xFF};
 
-const PROGMEM uint8_t bar_start[8 * 16 / 8] = 
+const PROGMEM uint8_t bar_start[8 * 16 / 8] =
 {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFF, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFF};
 
-const PROGMEM uint8_t bar_end[8 * 16 / 8] =   
+const PROGMEM uint8_t bar_end[8 * 16 / 8] =
 {0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
-const PROGMEM uint8_t bar[][8 * 16 / 8] = 
+const PROGMEM uint8_t bar[][8 * 16 / 8] =
 {
   {0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80},
   {0xFF,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0xFF,0x80,0x80,0x80,0x80,0x80,0x80,0x80},
@@ -88,17 +87,14 @@ const PROGMEM uint8_t bar[][8 * 16 / 8] =
 };
 
 
-
-
-uint16_t vcc=0;
 volatile uint8_t  adc_irq_cnt;
 
 /* ======================================================================
 Function: drawBargraph
-Purpose : 
-Input   : 
-Output  : 
-Comments: 
+Purpose :
+Input   :
+Output  :
+Comments:
 ====================================================================== */
 void drawBargraph(uint8_t x, uint8_t y, uint8_t value, uint8_t max_value, uint8_t nb_bar)
 {
@@ -107,7 +103,7 @@ void drawBargraph(uint8_t x, uint8_t y, uint8_t value, uint8_t max_value, uint8_
 
   lcd.setCursor(x, y);
   lcd.draw(bar_start, 8, 16);
-  
+
   nb_bar = map(value, 0, max_value, 0, nb_bar);
 
   for (uint8_t i=1; i<=nb_char; i++)
@@ -125,13 +121,13 @@ void drawBargraph(uint8_t x, uint8_t y, uint8_t value, uint8_t max_value, uint8_
 /* ======================================================================
 Function: Interrupt routine for ADC
 Purpose : Fired when ADC interrupt occured (mainly end of convertion)
-Input   : 
-Output  : 
+Input   :
+Output  :
 Comments: Used by readADCLowNoise
 ====================================================================== */
-ISR(ADC_vect)  
+ISR(ADC_vect)
 {
-  // Increment ADC sample count 
+  // Increment ADC sample count
   // will check after wake up
   adc_irq_cnt++;
 }
@@ -148,10 +144,10 @@ uint16_t readADCLowNoise(bool average)
 {
   uint8_t low, high;
   uint16_t sum = 0;
-  
+
   // Start 1st Conversion, but ignore it, can be hazardous
-  ADCSRA |= _BV(ADSC); 
-  
+  ADCSRA |= _BV(ADSC);
+
   // as we will enter into deep sleep mode, flush serial to avoid
   // data loss or corrupted
   Serial.flush();
@@ -164,7 +160,7 @@ uint16_t readADCLowNoise(bool average)
 
   // Want to have an interrupt when the conversion is done
   ADCSRA |= _BV( ADIE );
-  
+
   // Loop thru samples
   do
   {
@@ -172,7 +168,7 @@ uint16_t readADCLowNoise(bool average)
     set_sleep_mode( SLEEP_MODE_ADC );
     sleep_enable();
 
-    // Wait until conversion is finished 
+    // Wait until conversion is finished
     do
     {
       // The following line of code is only important on the second pass.  For the first pass it has no effect.
@@ -190,24 +186,24 @@ uint16_t readADCLowNoise(bool average)
     sleep_disable();
     // Enable interrupts
     sei();
-    
+
     // read low first
     low  = ADCL;
     high = ADCH;
-    
+
     // Sum the total
     sum += ((high << 8) | low);
-    
+
   }
   // Hard coded to read 8 samples
   while (adc_irq_cnt<8);
-  
+
   // No more interrupts needed for this
   ADCSRA &= ~ _BV( ADIE );
-  
+
   // Return the average divided by 8 (8 samples) if asked
   return ( average ? sum >> 3 : sum );
-  
+
 }
 
 /* ======================================================================
@@ -217,34 +213,34 @@ Input   : -
 Output  : value readed in mV
 Comments: ADC Channel input is modified
 ====================================================================== */
-uint16_t readVcc() 
+uint16_t readVcc()
 {
-  uint16_t value; 
-  
-  // Indicate RFM12B IRQ we're doing conversion 
+  uint16_t value;
+
+  // Indicate RFM12B IRQ we're doing conversion
   // so it should not doing any RSSI acquisition in the interval
   // we're using the ADC
   radio.noRSSI(true);
-  
+
   // Read 1.1V reference against AVcc
   // REFS1 REFS0          --> 0 1, AVcc external ref. -Selects AVcc external reference
   // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         -Selects channel 14, bandgap voltage, to measure
   ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
 
   // Take care, changing reference from VCC to 1.1V bandgap can take some time, this is due
-  // to the fact that the capacitor on aref pin need to discharge or to charge 
-  delay(10);  
+  // to the fact that the capacitor on aref pin need to discharge or to charge
+  delay(10);
 
   // read value
   value = readADCLowNoise(true);
-  
+
   // we done with ADC
   radio.noRSSI(false);
-  
+
   // Vcc reference in millivolts
   // can be adjusted 1100L if 1V1 reference but has tolerance of 10% so you can measure it
   // and change it there, or better use it as parameter
-  return ( (( 1023L * 1100L) / value) ); 
+  return ( (( 1023L * 1100L) / value) );
 }
 
 
@@ -253,14 +249,14 @@ Function: setup
 Purpose : Configuration of Arduino I/O and other stuff
 Input   : -
 Output  : -
-Comments: 
+Comments:
 ====================================================================== */
-void setup() 
+void setup()
 {
 
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LOW);
-  
+
   #ifdef BOARD_ARDUINODE_V_1_1
     pinMode(LED_RF, OUTPUT);
     digitalWrite(LED_RF, HIGH);
@@ -279,12 +275,12 @@ void setup()
 
   Serial.begin(SERIAL_BAUD);
   Serial.println(F("RFM12B Range Test Node"));
-  
+
  	lcd.begin();
   lcd.clear();
   lcd.setFontSize(FONT_SIZE_MEDIUM);
 
-/*  
+/*
   lcd.setCursor(32, 2);
   for (uint8_t i=0; i<=35; i++ )
   {
@@ -293,7 +289,7 @@ void setup()
     delay(100);
   }
 */
-  
+
   lcd.clear();
   lcd.setFontSize(FONT_SIZE_MEDIUM);
   lcd.setCursor(0, 0);
@@ -315,9 +311,9 @@ void setup()
     lcd.draw(cross, 16, 16);
   }
 
-  
+
   radio.Initialize(NODEID, FREQUENCY, NETWORKID, 0);
-  
+
   Serial.print(F("Transmitting at "));
   Serial.print(FREQUENCY==RF12_433MHZ ? 433 : FREQUENCY==RF12_868MHZ ? 868 : 915);
   Serial.println(F("Mhz..."));
@@ -326,7 +322,7 @@ void setup()
   lcd.print(F("ARSSI : "));
   Serial.print(F("ARSSI "));
 
-  
+
   // If RSSI is activated for this board
   // display relative information
   if ( radio.getRSSIIdle())
@@ -349,18 +345,10 @@ void setup()
     lcd.draw(cross, 16, 16);
   }
 
-  // read vcc value
-  vcc=readVcc();
-  Serial.print(F("Vcc = "));
-  Serial.print(vcc);
-  Serial.println(F(" mV"));
-
-  
   Serial.println(F("Quick command summary, type it any time"));
-  Serial.println(F("  v : read and display VCC"));
 
   Serial.println(F("\nStarting to send data to gateway ...\n"));
-  
+
   delay(2500);
   lcd.clear();
 }
@@ -370,9 +358,9 @@ Function: loop
 Purpose : really need explanations ???
 Input   : -
 Output  : -
-Comments: 
+Comments:
 ====================================================================== */
-void loop() 
+void loop()
 {
   uint8_t  col;
   //process any serial input
@@ -387,13 +375,6 @@ void loop()
       Serial.print(TRANSMITPERIOD);
       Serial.println(F("ms\n"));
     }
-    // Read and display VCC value
-    if (input == 'v') 
-    {
-      Serial.print(F("VCC : "));
-      Serial.print(readVcc());
-      Serial.println(F("mV"));
-    }
   }
 
   //check for any received packets
@@ -402,19 +383,19 @@ void loop()
     if (radio.CRCPass())
     {
       int8_t rssi, k;
-      
+
       // Light on the led
       digitalWrite(LED,HIGH);
-      
+
       Serial.print('[');Serial.print(radio.GetSender(), DEC);Serial.print("] ");
-      
+
       // len should be 1 (RSSI byte)
       if (*radio.DataLen != 1)
         Serial.print(F("Invalid RSSI payload received, not matching RSSI ACK Format!"));
       else
         rssi = radio.Data[0]; //radio.DATA actually contains RSSI
 
-      
+
       if (rssi == RF12_ARSSI_DISABLED )
         Serial.print(F("disabled on gateway")); // ARSSI was not enabled on Gateway sketch
       else if (rssi == RF12_ARSSI_BAD_IDLE )
@@ -436,10 +417,10 @@ void loop()
       }
       else
       {
-        // all sounds good, display 
+        // all sounds good, display
         // display bargraph on serial
         Serial.print(F("["));
-        
+
         for (k=RF12_ARSSI_MIN; k<=RF12_ARSSI_MAX; k++)
         {
           if (rssi>=k )
@@ -451,11 +432,11 @@ void loop()
         Serial.print(F("] "));
         Serial.print(rssi);
         Serial.print(F(" dB"));
-        
-        
+
+
         // display bargraph on lcd
         drawBargraph(0, 2, 100+rssi, 35, 64);
-        
+
         lcd.setCursor(32, 5);
         lcd.setFontSize(FONT_SIZE_XLARGE);
         lcd.print(F("-"));
@@ -465,13 +446,13 @@ void loop()
 
 
       Serial.println();
-  
+
       // Light off the led
       digitalWrite(LED,LOW);
 
     }
   }
-  
+
   int currPeriod = millis()/TRANSMITPERIOD;
   if (currPeriod != lastPeriod)
   {
@@ -479,12 +460,11 @@ void loop()
     lcd.setFontSize(FONT_SIZE_MEDIUM);
     lcd.print("Sending to #");
     lcd.print(GATEWAYID);
-    
+
     //fill in the payload with values
     theData.command = 0x01;
-    theData.vcc  = readVcc();
     theData.rssi = RF12_ARSSI_RECV;
-    
+
     // Light on the led
     digitalWrite(LED_RED,HIGH);
 
@@ -498,4 +478,3 @@ void loop()
     lastPeriod=currPeriod;
   }
 }
-
