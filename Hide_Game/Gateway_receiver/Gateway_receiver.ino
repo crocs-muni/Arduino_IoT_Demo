@@ -110,6 +110,29 @@ uint16_t readADCLowNoise(bool average)
 
 }
 
+void makeSignalFar(){
+  Serial.println("Too far");
+  digitalWrite(LED,LOW);
+  delay(25);
+  digitalWrite(LED,HIGH);
+  delay(400);
+}
+
+void makeSignalNear(){
+  Serial.println("Near");
+  digitalWrite(LED,LOW);
+  delay(250);
+  digitalWrite(LED,HIGH);
+  delay(250);
+}
+
+void makeSignalGot(){
+  Serial.println("got it!");
+  digitalWrite(LED,LOW);
+  delay(500);
+  digitalWrite(LED,HIGH);
+}
+
 /* ======================================================================
 Function: readVcc
 Purpose : Read and Calculate V powered, the Voltage on Arduino VCC pin
@@ -273,21 +296,12 @@ void loop()
   if (radio.ReceiveComplete())
   {
     if (radio.CRCPass())
-    Serial.println("I get CRCPass");
     {
-      // Light on the led
-      //digitalWrite(LED,HIGH);
-
       // Get RSSI of received packet
       // Set parameter to VCC voltage of arduino
       byte theNodeID = radio.GetSender();
-      /**Serial.print("sender is ");
-      Serial.print(theNodeID);
-      Serial.println();**/
+
       int8_t rssi = radio.ReadARSSI(vcc);
-      /**Serial.print("rssi is ");
-      Serial.print(rssi);
-      Serial.println();**/
       int8_t k;
 
       Serial.print(F("["));
@@ -295,32 +309,13 @@ void loop()
       Serial.print("] ");
 
       if (- 100 < rssi & rssi <= -89){
-        Serial.println("Too far");
-        digitalWrite(LED,LOW);
-        delay(25);
-        /**digitalWrite(LED,HIGH);
-        delay(50);
-        digitalWrite(LED,LOW);
-        delay(25);**/
-        digitalWrite(LED,HIGH);
-        delay(400);
+        makeSignalFar();
       }
       if (- 89 < rssi & rssi <= -76){
-        Serial.println("Near");
-        digitalWrite(LED,LOW);
-        delay(250);
-        /**digitalWrite(LED,HIGH);
-        delay(20);
-        digitalWrite(LED,LOW);
-        delay(200);**/
-        digitalWrite(LED,HIGH);
-        delay(250);
+        makeSignalNear();
       }
       if (- 76 < rssi & rssi <= -65){
-        Serial.println("got it!");
-        digitalWrite(LED,LOW);
-        delay(500);
-        digitalWrite(LED,HIGH);
+        makeSignalGot();
       }
 
       if (*radio.DataLen==sizeof(Payload))
@@ -383,10 +378,6 @@ void loop()
       }
 
       Serial.println();
-
-      // Light off the led
-      //digitalWrite(LED,LOW);
-
     }
   }
 }
