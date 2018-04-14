@@ -7,8 +7,21 @@
 #define RFM_CS_PIN  10 // RFM12B Chip Select Pin
 #define RFM_IRQ_PIN 2  // RFM12B IRQ Pin
 #define RSSI_PIN    0  // Analog entry where is connected ARSSI signal
-#define LED         9
 #define SERIAL_BAUD 115200
+
+// Generally, you should use "unsigned long" for variables that hold time
+// The value will quickly become too large for an int to store
+unsigned long previousMillis = 0;        // will store last time LED was updated
+
+// constants won't change:
+const long interval = 1000;           // interval at which to blink (milliseconds)
+
+int redPin = 6;
+int greenPin = 15;
+int bluePin = 17;
+
+//uncomment this line if using a Common Anode LED
+//#define COMMON_ANODE
 
 RFM12B radio;
 byte ackCount=0;
@@ -110,29 +123,6 @@ uint16_t readADCLowNoise(bool average)
 
 }
 
-void makeSignalFar(){
-  Serial.println("Too far");
-  digitalWrite(LED,LOW);
-  delay(25);
-  digitalWrite(LED,HIGH);
-  delay(400);
-}
-
-void makeSignalNear(){
-  Serial.println("Near");
-  digitalWrite(LED,LOW);
-  delay(250);
-  digitalWrite(LED,HIGH);
-  delay(250);
-}
-
-void makeSignalGot(){
-  Serial.println("got it!");
-  digitalWrite(LED,LOW);
-  delay(500);
-  digitalWrite(LED,HIGH);
-}
-
 /* ======================================================================
 Function: readVcc
 Purpose : Read and Calculate V powered, the Voltage on Arduino VCC pin
@@ -180,8 +170,9 @@ Comments:
 ====================================================================== */
 void setup()
 {
-
-  pinMode(LED, OUTPUT);
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
 
   Serial.begin(SERIAL_BAUD);
   delay(10);
@@ -308,18 +299,10 @@ void loop()
       Serial.print(theNodeID, DEC);
       Serial.print("] ");
 
-      if (- 100 < rssi & rssi <= -89){
-        makeSignalFar();
-      }
-      if (- 89 < rssi & rssi <= -76){
-        makeSignalNear();
-      }
-      if (- 76 < rssi & rssi <= -65){
-        makeSignalGot();
-      }
-
       if (*radio.DataLen==sizeof(Payload))
       {
+        unsigned long previousMillis = millis();
+
         theData = *(Payload*)radio.Data;
 
         // Ok is it a RSSI request packet ?
@@ -363,6 +346,15 @@ void loop()
 
             Serial.print(rssi);
             Serial.print(F(" dB"));
+            if (rssi < -90){
+              setColor(0, 0, 255);
+              Serial.println("Far");
+            }
+            else
+            {
+              setColor(255, 0, 0);
+              Serial.println("Near");
+            }
           }
 
           // Display Data info received including RSSI value
@@ -380,4 +372,26 @@ void loop()
       Serial.println();
     }
   }
+  else
+  {
+    unsigned long currentMillis = millis();
+
+    if (currentMillis - previousMillis >= interval) {
+      setColor(0, 0, 0);
+      previousMillis = 0;
+      Serial.println("RESET RGB LED");
+    }
+  }
+}
+
+void setColor(int red, int green, int blue)
+{
+  #ifdef COMMON_ANODE
+    red = 255 - red;
+    green = 255 - green;
+    blue = 255 - blue;
+  #endif
+  analogWrite(redPin, red);
+  analogWrite(greenPin, green);
+  analogWrite(bluePin, blue);
 }
