@@ -20,9 +20,6 @@ int redPin = 6;
 int greenPin = 15;
 int bluePin = 17;
 
-//uncomment this line if using a Common Anode LED
-//#define COMMON_ANODE
-
 RFM12B radio;
 byte ackCount=0;
 
@@ -347,14 +344,22 @@ void loop()
 
             Serial.print(rssi);
             Serial.print(F(" dB"));
-            if (rssi < -90){
-              setColor(0, 0, 255);
-              Serial.println("Far");
+            if (rssi < -89){
+              setColor(0, 0, 255);  // blue
+              Serial.println("Far blue color");
             }
             else
             {
-              setColor(255, 0, 0);
-              Serial.println("Near");
+              if (rssi < -80)
+              {
+                setColor(255, 255, 0);
+                Serial.println("Near orange");
+              }
+              else
+              {
+                setColor(255, 0, 0);
+                Serial.println("Got red");
+              }
             }
           }
 
@@ -387,11 +392,6 @@ void loop()
 
 void setColor(int red, int green, int blue)
 {
-  #ifdef COMMON_ANODE
-    red = 255 - red;
-    green = 255 - green;
-    blue = 255 - blue;
-  #endif
   analogWrite(redPin, red);
   analogWrite(greenPin, green);
   analogWrite(bluePin, blue);
