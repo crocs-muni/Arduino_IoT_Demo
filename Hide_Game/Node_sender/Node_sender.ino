@@ -1,5 +1,4 @@
 #include <Wire.h>
-#include <MicroLCD.h>
 #include <RFM12B_arssi.h>
 
 #define NODEID      99
@@ -11,23 +10,9 @@
 #define SERIAL_BAUD 115200
 #define ACK_TIME    30  // # of ms to wait for an ack
 
+#define LED    9
 
-#define BOARD_ARDUINODE_V_1_1
-
-#ifdef BOARD_ARDUINODE_V_1_1
-	#define LED_RED					3
-	#define LED_BLU					4
-	#define LED_GRN					5
-	#define SW_IRQ					6
-	#define LED_RF					8
-	#define RF_POWER_PIN		9
-	#define OLED_RESET			A2
-  #define LED        LED_GRN
-#else
-  #define LED             9
-#endif
-
-int TRANSMITPERIOD = 1000; //transmit a packet to gateway so often (in ms)
+int TRANSMITPERIOD = 1000;    //transmit a packet to gateway so often (in ms)
 byte sendSize=0;
 RFM12B radio;
 long lastPeriod = -1;
@@ -37,8 +22,6 @@ typedef struct {
   int8_t    rssi;   // RSSI
 } Payload;
 Payload theData;
-
-LCD_SSD1306 lcd; /* for SSD1306 OLED module */
 
 const PROGMEM uint8_t smile[48 * 48 / 8] = {
 0x00,0x00,0x00,0x00,0x00,0x00,0x80,0xC0,0xE0,0xF0,0xF8,0xF8,0xFC,0xFC,0xFE,0xFE,0x7E,0x7F,0x7F,0x3F,0x3F,0x3F,0x3F,0x3F,0x3F,0x3F,0x3F,0x3F,0x3F,0x7F,0x7F,0x7E,0xFE,0xFE,0xFC,0xFC,0xF8,0xF8,0xF0,0xE0,0xC0,0x80,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -88,35 +71,6 @@ const PROGMEM uint8_t bar[][8 * 16 / 8] =
 
 
 volatile uint8_t  adc_irq_cnt;
-
-/* ======================================================================
-Function: drawBargraph
-Purpose :
-Input   :
-Output  :
-Comments:
-====================================================================== */
-void drawBargraph(uint8_t x, uint8_t y, uint8_t value, uint8_t max_value, uint8_t nb_bar)
-{
-  uint8_t index;
-  uint8_t nb_char = nb_bar / 8;
-
-  lcd.setCursor(x, y);
-  lcd.draw(bar_start, 8, 16);
-
-  nb_bar = map(value, 0, max_value, 0, nb_bar);
-
-  for (uint8_t i=1; i<=nb_char; i++)
-  {
-    lcd.setCursor(x+(i*8), y);
-    index = (nb_bar>8) ? 8 : nb_bar;
-    lcd.draw(bar[index], 8, 16);
-    nb_bar = (nb_bar>8) ? nb_bar-=8 : 0;
-  }
-
-  lcd.setCursor(x+(nb_char+1)*8, y);
-  lcd.draw(bar_end, 8, 16);
-}
 
 /* ======================================================================
 Function: Interrupt routine for ADC
@@ -207,44 +161,6 @@ uint16_t readADCLowNoise(bool average)
 }
 
 /* ======================================================================
-Function: readVcc
-Purpose : Read and Calculate V powered, the Voltage on Arduino VCC pin
-Input   : -
-Output  : value readed in mV
-Comments: ADC Channel input is modified
-====================================================================== */
-uint16_t readVcc()
-{
-  uint16_t value;
-
-  // Indicate RFM12B IRQ we're doing conversion
-  // so it should not doing any RSSI acquisition in the interval
-  // we're using the ADC
-  radio.noRSSI(true);
-
-  // Read 1.1V reference against AVcc
-  // REFS1 REFS0          --> 0 1, AVcc external ref. -Selects AVcc external reference
-  // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         -Selects channel 14, bandgap voltage, to measure
-  ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
-
-  // Take care, changing reference from VCC to 1.1V bandgap can take some time, this is due
-  // to the fact that the capacitor on aref pin need to discharge or to charge
-  delay(10);
-
-  // read value
-  value = readADCLowNoise(true);
-
-  // we done with ADC
-  radio.noRSSI(false);
-
-  // Vcc reference in millivolts
-  // can be adjusted 1100L if 1V1 reference but has tolerance of 10% so you can measure it
-  // and change it there, or better use it as parameter
-  return ( (( 1023L * 1100L) / value) );
-}
-
-
-/* ======================================================================
 Function: setup
 Purpose : Configuration of Arduino I/O and other stuff
 Input   : -
@@ -257,45 +173,9 @@ void setup()
   pinMode(LED, OUTPUT);
   digitalWrite(LED, LOW);
 
-  #ifdef BOARD_ARDUINODE_V_1_1
-    pinMode(LED_RF, OUTPUT);
-    digitalWrite(LED_RF, HIGH);
-    pinMode(LED_RED, OUTPUT);
-    digitalWrite(LED_RED, LOW);
-//    pinMode(LED_BLU, OUTPUT);
-    pinMode(LED_GRN, OUTPUT);
-  digitalWrite(LED_GRN, LOW);
-    // Enable RF Power
-    pinMode(RF_POWER_PIN, OUTPUT);
-    digitalWrite(RF_POWER_PIN, 0);
-    // Enable SWitch Input
-    pinMode(SW_IRQ, INPUT);
-    digitalWrite(SW_IRQ, 1);
-  #endif
-
   Serial.begin(SERIAL_BAUD);
   Serial.println(F("RFM12B Range Test Node"));
-
- 	lcd.begin();
-  lcd.clear();
-  lcd.setFontSize(FONT_SIZE_MEDIUM);
-
-/*
-  lcd.setCursor(32, 2);
-  for (uint8_t i=0; i<=35; i++ )
-  {
-    // display bargraph on lcd
-    drawBargraph(16, 2, i, 35, 64);
-    delay(100);
-  }
-*/
-
-  lcd.clear();
-  lcd.setFontSize(FONT_SIZE_MEDIUM);
-  lcd.setCursor(0, 0);
-  lcd.println(F("RF Range Test"));
-  lcd.print(F("RFM12B  "));
- 	//lcd.setCursor(72, 2);
+	Serial.println("RF Range Test");
 
   // Try to detect and Init On moteino RF12 device SS is D10 and IRQ D2 (default)
   // So the parameters are optional
@@ -303,12 +183,10 @@ void setup()
   if ( radio.isPresent( RFM_CS_PIN, RFM_IRQ_PIN) )
   {
     Serial.println(F("RFM12B Detected OK!"));
-    lcd.draw(tick, 16, 16);
   }
   else
   {
     Serial.println(F("RFM12B Detection FAIL! (is chip present?)"));
-    lcd.draw(cross, 16, 16);
   }
 
 
@@ -318,8 +196,6 @@ void setup()
   Serial.print(FREQUENCY==RF12_433MHZ ? 433 : FREQUENCY==RF12_868MHZ ? 868 : 915);
   Serial.println(F("Mhz..."));
 
-  lcd.setCursor(0, 4);
-  lcd.print(F("ARSSI : "));
   Serial.print(F("ARSSI "));
 
 
@@ -332,17 +208,10 @@ void setup()
     Serial.print(F(" of this board\nARSSI idle voltage is set to "));
     Serial.print(radio.getRSSIIdle());
     Serial.println(F(" mV"));
-    lcd.draw(tick, 16, 16);
-    lcd.setCursor(0,6);
-    lcd.print(F("ARSSI "));
-    lcd.print(radio.getRSSIIdle());
-    lcd.print(F(" mV on A"));
-    lcd.println(radio.getRSSIAnalogPin());
   }
   else
   {
     Serial.println(F("Disabled for this board"));
-    lcd.draw(cross, 16, 16);
   }
 
   Serial.println(F("Quick command summary, type it any time"));
@@ -350,7 +219,6 @@ void setup()
   Serial.println(F("\nStarting to send data to gateway ...\n"));
 
   delay(2500);
-  lcd.clear();
 }
 
 /* ======================================================================
@@ -432,16 +300,6 @@ void loop()
         Serial.print(F("] "));
         Serial.print(rssi);
         Serial.print(F(" dB"));
-
-
-        // display bargraph on lcd
-        drawBargraph(0, 2, 100+rssi, 35, 64);
-
-        lcd.setCursor(32, 5);
-        lcd.setFontSize(FONT_SIZE_XLARGE);
-        lcd.print(F("-"));
-        lcd.printInt(-rssi);
-        lcd.print(F(" dB"));
       }
 
 
@@ -456,23 +314,18 @@ void loop()
   int currPeriod = millis()/TRANSMITPERIOD;
   if (currPeriod != lastPeriod)
   {
-    lcd.setCursor(0, 0);
-    lcd.setFontSize(FONT_SIZE_MEDIUM);
-    lcd.print("Sending to #");
-    lcd.print(GATEWAYID);
-
     //fill in the payload with values
     theData.command = 0x01;
     theData.rssi = RF12_ARSSI_RECV;
 
     // Light on the led
-    digitalWrite(LED_RED,HIGH);
+    digitalWrite(LED,HIGH);
 
     // No ACK, but payload command permit to get back RSSI from master
     radio.Send(GATEWAYID, (const void*)(&theData), sizeof(theData), false);
 
     // Light off the led
-    digitalWrite(LED_RED,LOW);
+    digitalWrite(LED,LOW);
 
     Serial.println();
     lastPeriod=currPeriod;
