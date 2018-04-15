@@ -301,7 +301,8 @@ void loop()
 
       if (*radio.DataLen==sizeof(Payload))
       {
-        unsigned long previousMillis = millis();
+        // when I receive signal, this I need to determine time between receiving signal
+        previousMillis = millis();
 
         theData = *(Payload*)radio.Data;
 
@@ -376,10 +377,10 @@ void loop()
   {
     unsigned long currentMillis = millis();
 
-    if (currentMillis - previousMillis >= interval) {
+    // without delay function
+    if (currentMillis - previousMillis >= interval) {    // switch off RGB diod
       setColor(0, 0, 0);
       previousMillis = 0;
-      Serial.println("RESET RGB LED");
     }
   }
 }
