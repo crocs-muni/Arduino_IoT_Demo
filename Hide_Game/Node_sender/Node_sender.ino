@@ -184,20 +184,7 @@ Comments:
 void loop()
 {
   uint8_t  col;
-  //process any serial input
-  if (Serial.available() > 0)
-  {
-    char input = Serial.read();
-    if (input >= 48 && input <= 57) //[0,9]
-    {
-      TRANSMITPERIOD = 100 * (input-48);
-      if (TRANSMITPERIOD == 0) TRANSMITPERIOD = 1000;
-      Serial.print(F("\nChanging delay to "));
-      Serial.print(TRANSMITPERIOD);
-      Serial.println(F("ms\n"));
-    }
-  }
-
+  
   //check for any received packets
   if (radio.ReceiveComplete())
   {
