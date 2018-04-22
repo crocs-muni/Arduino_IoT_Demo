@@ -26,6 +26,8 @@ byte ackCount=0;
 typedef struct {
   uint8_t   command;// command identifier
   int8_t    rssi;   // RSSI
+  int   node_id;
+  int   receiver_id;
 } Payload;
 Payload theData;
 
@@ -215,12 +217,6 @@ void setup()
   Serial.print(vcc);
   Serial.println(F(" mV"));
 
-  Serial.println(F("Quick command summary, type it any time"));
-  Serial.println(F("  v : read and display VCC"));
-  Serial.print(  F("  a : measure and display a set of ARSSI Analog Pin "));
-  Serial.print(radio.getRSSIAnalogPin());
-  Serial.println(F(")"));
-
   Serial.println(F("\nWaiting for receiving data from node ...\n"));
 
 }
@@ -234,53 +230,6 @@ Comments:
 ====================================================================== */
 void loop()
 {
-  //process any serial input
-  if (Serial.available() > 0)
-  {
-    char input = Serial.read();
-
-    // Read and display VCC value
-    if (input == 'v')
-    {
-      Serial.print(F("VCC : "));
-      Serial.print(readVcc());
-      Serial.println(F(" mV"));
-    }
-    // Read physical Arssi value, can be used to
-    // determine vidle to pass to SetRSSI()
-    if (input == 'a')
-    {
-      int16_t adc_value;
-
-      // display some ARSII raw samples
-      for (uint8_t i=0; i<=10; i++)
-      {
-        // Indicate RFM12B IRQ we're doing conversion
-        // so it should not doing any RSSI acquisition in the interval
-        // we're using the ADC
-        radio.noRSSI(true);
-
-        // Selects AVcc external reference and ARSSI Analog pin
-        ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (RSSI_PIN);
-
-        // Take care, changing reference from VCC to 1.1V bandgap can take some time, this is due
-        // to the fact that the capacitor on aref pin need to discharge or to charge
-        delay(10);
-
-        // read value and average samples
-        adc_value = readADCLowNoise(true);
-
-        // we done with ADC
-        radio.noRSSI(false);
-
-        // Now display
-        Serial.print(F("ARSSI : "));
-        Serial.print((uint32_t) vcc * adc_value / 1024); // convert arssi value to mV
-        Serial.println(F("mV"));
-      }
-    }
-  }
-
   if (radio.ReceiveComplete())
   {
     if (radio.CRCPass())
@@ -363,11 +312,8 @@ void loop()
             }
           }
 
-          // Display Data info received including RSSI value
-          Serial.print(F(" { from sender "));
-          Serial.print(F("RSSI="));
-          Serial.print(theData.rssi);
-          Serial.print(F(" dB } I dont understand what this is"));
+          Serial.print(F("Node_ID = "));
+          Serial.println(theData.node_id);
         }
       }
       else

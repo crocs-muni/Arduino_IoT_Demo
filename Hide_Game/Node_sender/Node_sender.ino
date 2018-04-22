@@ -16,6 +16,8 @@ RFM12B radio;
 typedef struct {
   uint8_t   command;// command identifier
   int8_t    rssi;   // RSSI
+  int   node_id;
+  int   receiver_id;
 } Payload;
 Payload theData;
 
@@ -52,24 +54,9 @@ void setup()
   Serial.print(FREQUENCY==RF12_433MHZ ? 433 : FREQUENCY==RF12_868MHZ ? 868 : 915);
   Serial.println(F("Mhz..."));
 
-  Serial.print(F("ARSSI "));
-
-
-  // If RSSI is activated for this board
-  // display relative information
-  if ( radio.getRSSIIdle())
-  {
-    Serial.print(F("Enabled\nConnect ARSSI signal on Analog pin "));
-    Serial.print(radio.getRSSIAnalogPin());
-    Serial.print(F(" of this board\nARSSI idle voltage is set to "));
-    Serial.print(radio.getRSSIIdle());
-    Serial.println(F(" mV"));
-  }
-  else
-  {
-    Serial.println(F("Disabled for this board"));
-  }
-
+  Serial.print("ID sender: ");
+  Serial.print(NODEID);
+  Serial.println();
   Serial.println(F("\nStarting to send data to gateway ...\n"));
 
   delay(2500);
@@ -87,6 +74,8 @@ void loop()
   //fill in the payload with values
   theData.command = 0x01;
   theData.rssi = RF12_ARSSI_RECV;
+  theData.node_id = NODEID;
+  theData.receiver_id = GATEWAYID;
 
   // Send date to all gateway
   radio.Send(GATEWAYID, (const void*)(&theData), sizeof(theData), false);
