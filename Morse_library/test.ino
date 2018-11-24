@@ -1,14 +1,20 @@
+/*
+ * simple example of how to use Morse library
+ */
+
 #include "Morse.h"
 
-Morse morse(9);
+Morse morse;
 
 void setup() {
   Serial.begin(9600);
-  pinMode(9, OUTPUT);
+  morse.initialize(9);
 }
 
 void loop() {
   Serial.println("*****     START      *****");
-  morse.codeString  ("SoSandRUN");
-  Serial.println("*****     END      *****");
+  // it is possible call with lowercase or uppercase characters
+  // " " is allowed only between 2 words
+  morse.codeString  ("SOs sos");
+  Serial.println("*****     END        *****");
 }

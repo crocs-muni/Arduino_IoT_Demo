@@ -11,17 +11,16 @@
 class Morse
 {
   public:
-    Morse(int pin);
+    void initialize(int pin);
     void dot();
     void dash();
-    void endLine();
+    void delayWord();
+    void delayChar();
     void codeString(String text);
     void encodeChar(char character);
-    void do_gap();
     void do_signal (String encode_string  );
   private:
     int _pin;
-    //String ALPHABET[];
 };
 
 #endif
