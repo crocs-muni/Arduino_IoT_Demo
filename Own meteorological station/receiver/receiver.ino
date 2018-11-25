@@ -1,6 +1,8 @@
-// Simple serial pass through program
-// It initializes the RFM12B radio with optional encryption and passes through any valid messages to the serial port
-// felix@lowpowerlab.com
+/*
+ * This is part of application own meterology
+ * This is for receiver. It gets data from station via radio waves 
+ * using library RFM12B.h
+ */
 
 #include "RFM12B.h"
 
@@ -13,8 +15,8 @@
 #define SERIAL_BAUD 9600
 
 typedef struct {
-  float      temperature;    // measured tempreture in Celsius
-  float       humidity;   // measured humidity
+  float temperature; // measured tempreture in Celsius
+  float humidity;    // measured humidity
 } Payload;
 Payload theData;
 
@@ -23,14 +25,14 @@ Payload theData;
 // - provide a 16-byte encryption KEY (same on all nodes that talk encrypted)
 // - to call .Encrypt(KEY) to start encrypting
 // - to stop encrypting call .Encrypt(NULL)
-uint8_t KEY[] = "ABCDABCDABCDABCD";
+uint8_t KEY[] = "YCBcfd5sd4yp76lD";
 
 // Need an instance of the Radio Module
 RFM12B radio;
 void setup()
 {
   radio.Initialize(NODEID, RF12_433MHZ, NETWORKID);
-  radio.Encrypt(KEY);      //comment this out to disable encryption
+  radio.Encrypt(KEY);
   Serial.begin(SERIAL_BAUD);
   Serial.println("Listening...");
 }

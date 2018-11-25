@@ -1,18 +1,16 @@
-// Simple RFM12B sender program, with ACK and optional encryption
-// It initializes the RFM12B radio with optional encryption and passes through any valid messages to the serial port
-// felix@lowpowerlab.com
+/*
+ * This is part of application own meterology
+ * This is for station. It measures temperature and humidity
+ * with senzor DHT22 using library DHT.h
+ * Measured values are sent to receiver.
+ */
 
 #include "RFM12B.h"
 #include "DHT.h"
-#include <avr/sleep.h>
 
 #define DHTPIN 6     // what digital pin we're connected to
 #define LED 9
-
-// Uncomment whatever type you're using!
-#define DHTTYPE DHT11   // DHT 11
-//#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
-//#define DHTTYPE DHT21   // DHT 21 (AM2301)
+#define DHTTYPE DHT22
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -24,11 +22,11 @@ DHT dht(DHTPIN, DHTTYPE);
 #define NETWORKID    99  //the network ID we are on
 #define GATEWAYID     1  //the node ID we're sending to
 #define ACK_TIME     50  // # of ms to wait for an ack
-#define SERIAL_BAUD  9600    //115200
+#define SERIAL_BAUD  9600
 
 typedef struct {
-  float      temperature;    // measured tempreture in Celsius
-  float       humidity;   // measured humidity
+  float temperature; // measured tempreture in Celsius
+  float humidity;    // measured humidity
 } Payload;
 Payload theData;
 
@@ -37,10 +35,9 @@ Payload theData;
 // - provide a 16-byte encryption KEY (same on all nodes that talk encrypted)
 // - to call .Encrypt(KEY) to start encrypting
 // - to stop encrypting call .Encrypt(NULL)
-uint8_t KEY[] = "ABCDABCDABCDABCD";
+uint8_t KEY[] = "YCBcfd5sd4yp76lD";
 
 int interPacketDelay = 1000; //wait this many ms between sending packets
-char input = 0;
 
 // Need an instance of the Radio Module
 RFM12B radio;
