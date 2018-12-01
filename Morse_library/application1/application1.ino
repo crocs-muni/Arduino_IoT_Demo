@@ -1,27 +1,27 @@
 #include "Morse.h"
 
 Morse morse;
-long randNumber;
-const int sizeArray = 5;
+int photocellPin = 17; // the cell and 10K pulldown are connected to a0
+int photocellReading;  // the analog reading from the analog resistor divider
+const int sizeArray = 6;
 const long timeDelay = 15000; // 15 seconds
-const String text[sizeArray] = {
+const String text[] = {
   "Light up",
   "Dark",
   "Switch off",
   "Lightness",
-  "WTF"
+  "WTF",
+  "SOS"
   };
 
 void setup() {
   Serial.begin(9600);
   morse.initialize(9);
-  //pinMode(9, OUTPUT);
-  randomSeed(analogRead(0)); // for every start set up different seek
 }
 
 void loop() {
-  randNumber = random(sizeArray);
-  Serial.println(text[randNumber]);
-  morse.codeString(text[randNumber]);
+  photocellReading = analogRead(photocellPin);
+  morse.codeString(text[photocellReading % sizeArray]);
   delay(timeDelay);
+  Serial.println("EEEEEND");
 }
