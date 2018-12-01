@@ -7,76 +7,119 @@
 #include "Arduino.h"
 #include "Morse.h"
 
+/*
+ * ALPHABET contains morse code
+ * . is dot
+ * - id dash
+ */
 String ALPHABET[26] = {
-    ".-",      //A
-    "-...",    //B
-    "-.-.",    //C
-    "-..",      //D
-    ".",          //E
-    "..-.",    //F
-    "--.",      //G
-    "....",    //H
-    "..",        //I
-    ".---",    //J
-    "-.-",      //K
-    ".-..",    //L
-    "--",        //M
-    "-.",        //N
-    "---",      //O
-    ".--.",    //P
-    "--.-",     //Q
-    ".-.",      //R
-    "...",      //S
-    "-",          //T
-    "..-",      //U
-    "...-",    //V
-    ".--",      //W
-    "-..-",    //X
-    "-.--",     //Y
-    "--.."     //Z
+//morse code   alphabet char
+    ".-",      //  A
+    "-...",    //  B
+    "-.-.",    //  C
+    "-..",     //  D
+    ".",       //  E
+    "..-.",    //  F
+    "--.",     //  G
+    "....",    //  H
+    "..",      //  I
+    ".---",    //  J
+    "-.-",     //  K
+    ".-..",    //  L
+    "--",      //  M
+    "-.",      //  N
+    "---",     //  O
+    ".--.",    //  P
+    "--.-",    //  Q
+    ".-.",     //  R
+    "...",     //  S
+    "-",       //  T
+    "..-",     //  U
+    "...-",    //  V
+    ".--",     //  W
+    "-..-",    //  X
+    "-.--",    //  Y
+    "--.."     //  Z
   };
 
-Morse::Morse(int pin)
+/*
+ * initial setup for pinMode(pin) and
+ * store value of pin as private _pin
+ */
+void Morse::initialize(int pin)
 {
   pinMode(pin, OUTPUT);
   _pin = pin;
 }
 
+/*
+ * method for visualing dot with blink LED on _pin
+ */
 void Morse::dot()
 {
+  digitalWrite(_pin, LOW);
+  delay(250);
   digitalWrite(_pin, HIGH);
   delay(250);
-  digitalWrite(_pin, LOW);
-  delay(250);  
 }
 
+/*
+ * method for visualing dash with blink LED on _pin
+ */
 void Morse::dash()
 {
-  digitalWrite(_pin, HIGH);
-  delay(1000);
   digitalWrite(_pin, LOW);
+  delay(750);
+  digitalWrite(_pin, HIGH);
   delay(250);
 }
 
-void Morse::endLine()
+/*
+ * delay between 2 characters is 3 * unit (250)
+ * => 750 ms
+ */
+void Morse::delayChar()
 {
+  Serial.println("delaying ");
   digitalWrite(_pin, HIGH);
-  delay(1000);
+  delay(3 * 250);
 }
 
+/*
+ * delay between words is 7 * unit (250)
+ * but it is word word so it has to be - 3 * unit (250)
+ * => there is only 4 * unit (250)
+ * => 1000 ms
+ */
+void Morse::delayWord()
+{
+  Serial.println("delaying ");
+  digitalWrite(_pin, HIGH);
+  delay(4 * 250);
+}
+
+/*
+ * method for encode text to visualing in morse code
+ * Example codeString("I AM PETER")
+ * Allowed only this characters:
+ * [ABCDEFGHIJKLMNOPQRSTUVWXYZ ]
+ */
 void Morse::codeString(String text)
 {
   text.toUpperCase();
-  //Serial.println(ALPHABET[10].charAt(0));
   int i = 0;
   for (i; i < text.length(); i++)
   {
-    Serial.println("call to encode ord and character");
-    Serial.println(text[i]);
+    Serial.println("call to encode character  ");
+    Serial.print(text[i]);
     encodeChar(text[i]);
   }
 }
 
+/*
+ * method calls dot() and dash()
+ * at the end calls delayChar()
+ */
 void Morse::do_signal(String encode_string){
   int i;
   Serial.println(encode_string);
@@ -90,29 +133,26 @@ void Morse::do_signal(String encode_string){
       dash();
     }
   };
-  endLine();
+  delayChar();
 }
 
-void Morse::do_gap(){
-  Serial.println("gap");
-}
-
+/*
+ * method calls other methods according to 
+ * value of character
+ * if character is not in authorized alphabet => do nothing
+ */
 void Morse::encodeChar(char character)
 {
-  Serial.println("call encodeCHAR with ");
-  Serial.println(character);
   if (character == ' '){
-    do_gap();
-    return;
+    delayWord();
   }
-  int ord = character - 'A';
-  if (ord >= 0 and ord <= 25){
-    Serial.println("ord and char");
-    Serial.println(ord);
-    Serial.println(ALPHABET[ord]);
-    Serial.println(_pin);
-    Serial.println(ALPHABET[0]);
-    do_signal(ALPHABET[ord]);
+  else {
+    int ord = character - 'A';
+    if (ord >= 0 and ord <= 25){
+      Serial.println("ord ");
+      Serial.print(ord);
+      Serial.println(ALPHABET[ord]);
+      do_signal(ALPHABET[ord]);
+    }
   }
 }
-
