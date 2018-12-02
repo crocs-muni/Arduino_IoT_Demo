@@ -1,20 +1,26 @@
-#include <avr/power.h>
 #include <RFM12B_arssi.h>
 
 #define NODEID      1
 #define NETWORKID   100
-#define FREQUENCY   RF12_433MHZ //Match this with the version of your Moteino! (others: RF69_433MHZ, RF69_868MHZ)
+#define FREQUENCY   RF12_433MHZ
 #define RFM_CS_PIN  10 // RFM12B Chip Select Pin
 #define RFM_IRQ_PIN 2  // RFM12B IRQ Pin
 #define RSSI_PIN    0  // Analog entry where is connected ARSSI signal
 #define SERIAL_BAUD 115200
 
+//encryption is OPTIONAL
+//to enable encryption you will need to:
+// - provide a 16-byte encryption KEY (same on all nodes that talk encrypted)
+// - to call .Encrypt(KEY) to start encrypting
+// - to stop encrypting call .Encrypt(NULL)
+uint8_t KEY[] = "YCBcXd5sQ4y976l7";
+
 // Generally, you should use "unsigned long" for variables that hold time
 // The value will quickly become too large for an int to store
-unsigned long previousMillis = 0;        // will store last time LED was updated
+unsigned long previousMillis = 0;  // will store last time LED was updated
 
 // constants won't change:
-const long interval = 1000;           // interval at which to blink (milliseconds)
+const long interval = 1000; // interval at which to blink (milliseconds)
 
 int redPin = 6;
 int greenPin = 15;
@@ -24,10 +30,9 @@ RFM12B radio;
 byte ackCount=0;
 
 typedef struct {
-  uint8_t   command;// command identifier
-  int8_t    rssi;   // RSSI
-  int   node_id;
-  int   receiver_id;
+  uint8_t   code;
+  int8_t    rssi;
+  String    greetings;
 } Payload;
 Payload theData;
 
@@ -177,19 +182,15 @@ void setup()
   delay(10);
   Serial.println(F("RFM12B Range Test Gateway"));
 
-   // Try to detect and Init On moteino RF12 device SS is D10 and IRQ D2 (default)
-  // So the parameters are optional
-  // if radio.isPresent()
   if ( radio.isPresent( RFM_CS_PIN, RFM_IRQ_PIN) )
     Serial.println(F("RFM12B Detected OK!"));
   else
     Serial.println(F("RFM12B Detection FAIL! (is chip present?)"));
 
-  // Ok now we indicate we want to use ARSSI reading, on my board I put ARSSI signal
-  // on Analog 0 pinMode with Idle Arssi to 300 mv (need to be adjusted)
   radio.SetRSSI( RSSI_PIN, 350 );
 
   radio.Initialize(NODEID, FREQUENCY, NETWORKID);
+  radio.Encrypt(KEY);
 
   Serial.print(F("Transmitting at "));
   Serial.print(FREQUENCY==RF12_433MHZ ? 433 : FREQUENCY==RF12_868MHZ ? 868 : 915);
@@ -253,7 +254,7 @@ void loop()
         theData = *(Payload*)radio.Data;
 
         // Ok is it a RSSI request packet ?
-        if (theData.rssi==RF12_ARSSI_RECV && theData.command==0x01)
+        if (theData.rssi==RF12_ARSSI_RECV && theData.code==0x01)
         {
           Serial.flush();
 
@@ -294,14 +295,14 @@ void loop()
             Serial.print(rssi);
             Serial.print(F(" dB"));
             if (rssi < -89){
-              setColor(0, 0, 255);  // blue
-              Serial.println("Far blue color");
+              setColor(0, 255, 0);
+              Serial.println("Far green color");
             }
             else
             {
               if (rssi < -80)
               {
-                setColor(255, 255, 0);
+                setColor(245, 245, 0);
                 Serial.println("Near orange");
               }
               else
@@ -311,9 +312,6 @@ void loop()
               }
             }
           }
-
-          Serial.print(F("Node_ID = "));
-          Serial.println(theData.node_id);
         }
       }
       else
@@ -336,6 +334,9 @@ void loop()
   }
 }
 
+/*
+ * Method controls color of RGB diode
+ */
 void setColor(int red, int green, int blue)
 {
   analogWrite(redPin, red);
