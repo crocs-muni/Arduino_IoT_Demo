@@ -31,13 +31,12 @@ void loop()
   
   if(val<=10&&val>0)
   {
-    digitalWrite(Buzzer, HIGH);   // turn the Buzzer on (HIGH is the voltage level)
-    //ziaden zvuk
+    digitalWrite(Buzzer, LOW);
   }
   else if(val<=25&&val>10)
   {
     digitalWrite(Buzzer, HIGH);   // turn the Buzzer on (HIGH is the voltage level)
-    delay(50);               // wait for a second
+    delay(50);
     digitalWrite(Buzzer, LOW);    // turn the Buzzer off by making the voltage LOW
     delay(50); 
   }
