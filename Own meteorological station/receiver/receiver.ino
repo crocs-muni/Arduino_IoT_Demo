@@ -1,6 +1,6 @@
 /*
  * This is part of application own meterology
- * This is for receiver. It gets data from station via radio waves 
+ * This is for receiver. It gets data from station via radio waves
  * using library RFM12B.h
  */
 
@@ -31,7 +31,7 @@ uint8_t KEY[] = "YCBcfd5sd4yp76lD";
 RFM12B radio;
 void setup()
 {
-  radio.Initialize(NODEID, RF12_433MHZ, NETWORKID);
+  radio.Initialize(NODEID, RF12_868MHZ, NETWORKID);
   radio.Encrypt(KEY);
   Serial.begin(SERIAL_BAUD);
   Serial.println("Listening...");

@@ -2,7 +2,7 @@
 
 #define NODEID      1
 #define NETWORKID   100
-#define FREQUENCY   RF12_433MHZ
+#define FREQUENCY   RF12_868MHZ
 #define RFM_CS_PIN  10 // RFM12B Chip Select Pin
 #define RFM_IRQ_PIN 2  // RFM12B IRQ Pin
 #define RSSI_PIN    0  // Analog entry where is connected ARSSI signal
