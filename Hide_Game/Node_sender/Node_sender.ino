@@ -5,7 +5,7 @@
 #define GATEWAYID   1
 #define RFM_CS_PIN  10 // RFM12B Chip Select Pin
 #define RFM_IRQ_PIN 2  // RFM12B IRQ Pin
-#define FREQUENCY   RF12_868MHZ
+#define FREQUENCY   RF12_433MHZ
 #define SERIAL_BAUD 115200
 
 //encryption is OPTIONAL
